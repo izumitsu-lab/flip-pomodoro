@@ -3,7 +3,15 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Real Flip Pomodoro</title>
+  
+  <title>Flip 2-Min Flow</title>
+
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Flip Flow">
+
   <style>
     /* 全体のリセットと背景設定 */
     * {
@@ -27,9 +35,80 @@
       overflow: hidden;
       cursor: pointer;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      position: relative;
     }
 
-    /* タイマーコンテナ（基本は横並び） */
+    /* 中央から左右に広がるフラッシュエフェクト用レイヤー */
+    .flash-overlay {
+      position: absolute;
+      top: 0;
+      left: 50%;
+      width: 0%;
+      height: 100%;
+      background: #ffffff;
+      z-index: 100;
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    @keyframes centerFlash {
+      0% {
+        left: 50%;
+        width: 0%;
+        opacity: 1;
+      }
+      40% {
+        left: 0%;
+        width: 100%;
+        opacity: 0.9;
+      }
+      100% {
+        left: 0%;
+        width: 100%;
+        opacity: 0;
+      }
+    }
+
+    .flash-trigger {
+      animation: centerFlash 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    /* 2分経過後のスタイリッシュな英語メッセージ（ポップアップ） */
+    .flow-message {
+      position: absolute;
+      top: 38%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      text-align: center;
+      z-index: 110;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.show-message .flow-message {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .flow-message h1 {
+      font-weight: 300;
+      font-size: clamp(20px, 4vw, 42px);
+      letter-spacing: 4px;
+      color: #ffffff;
+      text-shadow: 0 0 20px rgba(255,255,255,0.3);
+      margin-bottom: 1vh;
+      text-transform: uppercase;
+    }
+
+    .flow-message p {
+      font-weight: 300;
+      font-size: clamp(12px, 1.8vw, 18px);
+      letter-spacing: 3px;
+      color: #888888;
+    }
+
+    /* タイマーコンテナ */
     .timer-container {
       display: flex;
       align-items: center;
@@ -37,14 +116,14 @@
       width: 100%;
       gap: 3vw; 
       transform: translateY(-3vh); 
-      transition: all 0.3s ease; /* 縦横の切り替えを少し滑らかに */
+      transition: all 0.5s ease; 
     }
 
     /* フリップユニット本体 */
     .flip-unit {
       position: relative;
       aspect-ratio: 1 / 1; 
-      width: min(42vw, 75vh); /* 横画面時の限界サイズ */
+      width: min(42vw, 75vh); 
       height: auto;
       perspective: 1200px;
       border-radius: 3cqmin; 
@@ -83,6 +162,13 @@
       background-color: #1a1a1a;
       backface-visibility: hidden;
       transform-style: preserve-3d;
+      transition: background-color 0.8s ease;
+    }
+
+    /* フローモード時のカード背景 */
+    body.mode-flow .top, 
+    body.mode-flow .bottom {
+      background-color: #242424;
     }
 
     .top {
@@ -188,7 +274,7 @@
       z-index: 20;
     }
 
-    /* モード選択（中央） */
+    /* モード表示（中央に絶対配置） */
     .modes {
       position: absolute;
       left: 50%;
@@ -211,19 +297,26 @@
       color: #999999;
     }
 
-    /* フリップトグル（右端） */
-    .flip-toggle {
+    /* 右側の設定トグル群 */
+    .toggles {
+      display: flex;
+      gap: 1vw;
+    }
+
+    .setting-toggle {
       font-size: clamp(12px, 2vh, 18px);
       font-weight: 300;
       letter-spacing: 2px;
       color: #333333;
-      transition: color 0.2s ease;
-      padding: 8px 15px;
+      transition: color 0.3s ease;
+      padding: 8px 10px;
       cursor: pointer;
+      min-width: 80px; 
+      text-align: center;
     }
 
-    .flip-toggle.flash {
-      color: #aaaaaa; 
+    .setting-toggle.flash {
+      color: #e0e0e0; 
     }
 
     /* =========================================
@@ -231,32 +324,48 @@
        ========================================= */
     @media (orientation: portrait) {
       .timer-container {
-        flex-direction: column; /* 縦並びに変更 */
-        gap: 2vh; /* 縦の隙間 */
-        transform: translateY(-4vh); /* 縦並びの時の位置微調整 */
+        flex-direction: column; 
+        gap: 2vh; 
+        transform: translateY(-5vh); 
       }
-      
       .flip-unit {
-        /* 縦に2つ並ぶため、幅ではなく「画面の高さの約38%」を限界サイズに設定 */
-        width: min(85vw, 38vh); 
+        width: min(80vw, 32vh); 
+      }
+      .colon {
+        display: none; 
       }
       
-      .colon {
-        display: none; /* 縦並びの時はコロンを非表示にして洗練させる */
+      .bottom-bar {
+        justify-content: center;
+        bottom: calc(env(safe-area-inset-bottom, 20px) + 5vh);
       }
       
       .modes {
-        gap: 8vw; /* 縦画面だと横幅が狭いので、メニューの隙間を少し広めに */
+        position: relative;
+        left: 0;
+        transform: none;
+        gap: 10vw; 
+      }
+      
+      .toggles {
+        display: none;
       }
     }
   </style>
 </head>
-<body class="paused" id="body" onclick="toggleTimer()">
+<body class="paused" id="body">
+
+  <div id="flash-overlay" class="flash-overlay"></div>
+
+  <div class="flow-message">
+    <h1>You're in the flow</h1>
+    <p>Keep going, you're free now.</p>
+  </div>
 
   <div class="timer-container">
     <div class="flip-unit" id="min-unit">
-      <div class="top" data-val="25"></div>
-      <div class="bottom" data-val="25"></div>
+      <div class="top" data-val="02"></div>
+      <div class="bottom" data-val="02"></div>
     </div>
     <div class="colon">:</div>
     <div class="flip-unit" id="sec-unit">
@@ -267,33 +376,97 @@
   
   <div class="bottom-bar">
     <div class="modes">
-      <div id="btn-focus" class="mode-btn active" onclick="setMode('focus', event)">FOCUS</div>
-      <div id="btn-break" class="mode-btn" onclick="setMode('break', event)">BREAK</div>
+      <div id="btn-prep" class="mode-btn active">2-MIN PREP</div>
+      <div id="btn-flow" class="mode-btn">WORK FLOW</div>
     </div>
-    <div id="btn-flip" class="flip-toggle" onclick="toggleFlip(event)">FLIP</div>
+    <div class="toggles">
+      <div id="btn-sound" class="setting-toggle">SOUND</div>
+      <div id="btn-flip" class="setting-toggle">FLIP</div>
+    </div>
   </div>
 
   <script>
-    const TIME_FOCUS = 25 * 60;
-    const TIME_BREAK = 5 * 60;
+    const PREP_TIME = 2 * 60; // 最初の2分間
 
-    let timeLeft = TIME_FOCUS;
+    let timeLeft = PREP_TIME;
+    let elapsedSeconds = 0; 
     let isRunning = false;
-    let currentMode = 'focus';
-    let isFlipEnabled = false; 
+    let currentMode = 'prep'; 
+    
+    let isFlipEnabled = true;  
+    let isSoundEnabled = false; 
+    
     let timerInterval;
+    let audioCtx; 
+    let flipTimeoutId;
+    let soundTimeoutId;
+    let messageTimeoutId;
 
     const bodyEl = document.getElementById('body');
-    const btnFocus = document.getElementById('btn-focus');
-    const btnBreak = document.getElementById('btn-break');
+    const flashOverlay = document.getElementById('flash-overlay');
+    const btnPrep = document.getElementById('btn-prep');
+    const btnFlow = document.getElementById('btn-flow');
     const btnFlip = document.getElementById('btn-flip');
+    const btnSound = document.getElementById('btn-sound');
+
+    function initAudio() {
+      try {
+        if (!audioCtx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch (e) {
+        console.error("Audio init error:", e);
+      }
+    }
+
+    function playElegantChime() {
+      if (!isSoundEnabled || !audioCtx) return;
+      try {
+        const t = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.value = 880; 
+
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.value = 1760; 
+
+        gain1.gain.setValueAtTime(0, t);
+        gain1.gain.linearRampToValueAtTime(0.5, t + 0.05); 
+        gain1.gain.exponentialRampToValueAtTime(0.001, t + 3); 
+
+        gain2.gain.setValueAtTime(0, t);
+        gain2.gain.linearRampToValueAtTime(0.15, t + 0.05);
+        gain2.gain.exponentialRampToValueAtTime(0.001, t + 2);
+
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+
+        osc1.start(t);
+        osc1.stop(t + 3);
+        osc2.start(t);
+        osc2.stop(t + 2);
+      } catch (e) {
+        console.error("Audio play error:", e);
+      }
+    }
 
     function flip(unitId, newNumber) {
       const unit = document.getElementById(unitId);
+      if (!unit) return;
       const top = unit.querySelector('.top:not(.flip-top)');
       const bottom = unit.querySelector('.bottom:not(.flip-bottom)');
-      const currentNumber = top.getAttribute('data-val');
+      if (!top || !bottom) return;
       
+      const currentNumber = top.getAttribute('data-val');
       if (currentNumber === newNumber) return;
 
       unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
@@ -321,27 +494,54 @@
       });
     }
 
-    function updateDisplay(forceUpdate = false) {
-      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
-      const s = (timeLeft % 60).toString().padStart(2, '0');
-
+    function updateDisplay(mStr, sStr, forceUpdate = false) {
       if (forceUpdate || !isFlipEnabled) {
         ['min-unit', 'sec-unit'].forEach(id => {
-          const val = id === 'min-unit' ? m : s;
+          const val = id === 'min-unit' ? mStr : sStr;
           const unit = document.getElementById(id);
-          
-          // アニメーション途中の仮カード（ゴミ）が残っていたら強制的に消す
-          unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
-          
-          unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
+          if (unit) {
+            unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
+            unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
+          }
         });
       } else {
-        flip('min-unit', m);
-        flip('sec-unit', s);
+        flip('min-unit', mStr);
+        flip('sec-unit', sStr);
       }
     }
 
+    function renderCurrentTime() {
+      if (currentMode === 'prep') {
+        const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+        const s = (timeLeft % 60).toString().padStart(2, '0');
+        updateDisplay(m, s);
+      } else {
+        const m = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
+        const s = (elapsedSeconds % 60).toString().padStart(2, '0');
+        updateDisplay(m, s);
+      }
+    }
+
+    // 2分終了時の演出とメッセージ表示
+    function triggerFlowTransition() {
+      // 1. 中央からのフラッシュ演出
+      flashOverlay.classList.remove('flash-trigger');
+      void flashOverlay.offsetWidth; 
+      flashOverlay.classList.add('flash-trigger');
+
+      // 2. メッセージをふんわり表示
+      bodyEl.classList.add('show-message');
+
+      // 3. 4秒後にメッセージを美しくフェードアウトさせる
+      clearTimeout(messageTimeoutId);
+      messageTimeoutId = setTimeout(() => {
+        bodyEl.classList.remove('show-message');
+      }, 4000);
+    }
+
     function toggleTimer() {
+      initAudio();
+
       if (isRunning) {
         clearInterval(timerInterval);
         isRunning = false;
@@ -351,45 +551,110 @@
         bodyEl.classList.remove('paused');
         
         timerInterval = setInterval(() => {
-          timeLeft--;
-          updateDisplay();
+          if (currentMode === 'prep') {
+            timeLeft--;
+            renderCurrentTime();
 
-          if (timeLeft <= 0) {
-            const nextMode = currentMode === 'focus' ? 'break' : 'focus';
-            setMode(nextMode);
+            if (timeLeft <= 0) {
+              playElegantChime();
+              triggerFlowTransition();
+              setMode('flow', true); 
+            }
+          } else {
+            elapsedSeconds++;
+            renderCurrentTime();
           }
         }, 1000);
       }
     }
 
-    function setMode(mode, event) {
-      if (event) event.stopPropagation();
-
+    function setMode(mode, autoTransition = false) {
       clearInterval(timerInterval);
       isRunning = false;
       bodyEl.classList.add('paused');
       
       currentMode = mode;
-      timeLeft = mode === 'focus' ? TIME_FOCUS : TIME_BREAK;
       
-      btnFocus.classList.toggle('active', mode === 'focus');
-      btnBreak.classList.toggle('active', mode === 'break');
+      if (mode === 'prep') {
+        timeLeft = PREP_TIME;
+        bodyEl.classList.remove('mode-flow');
+        bodyEl.classList.remove('show-message');
+      } else {
+        if (!autoTransition) {
+          bodyEl.classList.remove('show-message');
+        }
+        elapsedSeconds = 0;
+        bodyEl.classList.add('mode-flow');
+      }
       
-      updateDisplay(true);
+      btnPrep.classList.toggle('active', mode === 'prep');
+      btnFlow.classList.toggle('active', mode === 'flow');
+      
+      renderCurrentTime();
+
+      if (autoTransition) {
+        isRunning = true;
+        bodyEl.classList.remove('paused');
+        
+        timerInterval = setInterval(() => {
+          elapsedSeconds++;
+          renderCurrentTime();
+        }, 1000);
+      }
     }
 
-    function toggleFlip(event) {
-      if (event) event.stopPropagation();
+    function toggleFlip() {
       isFlipEnabled = !isFlipEnabled;
-      
+      btnFlip.textContent = isFlipEnabled ? "FLIP: ON" : "FLIP: OFF";
       btnFlip.classList.add('flash');
-      
-      setTimeout(() => {
+      clearTimeout(flipTimeoutId);
+      flipTimeoutId = setTimeout(() => {
         btnFlip.classList.remove('flash');
-      }, 300);
+        btnFlip.textContent = "FLIP";
+      }, 1500);
     }
 
-    updateDisplay(true);
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      btnSound.textContent = isSoundEnabled ? "SOUND: ON" : "SOUND: OFF";
+      btnSound.classList.add('flash');
+      clearTimeout(soundTimeoutId);
+      soundTimeoutId = setTimeout(() => {
+        btnSound.classList.remove('flash');
+        btnSound.textContent = "SOUND";
+      }, 1500);
+      if(isSoundEnabled) {
+        initAudio();
+        playElegantChime();
+      }
+    }
+
+    btnPrep.addEventListener('click', function(e) {
+      e.stopPropagation();
+      setMode('prep');
+    });
+
+    btnFlow.addEventListener('click', function(e) {
+      e.stopPropagation();
+      setMode('flow');
+    });
+
+    btnFlip.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleFlip();
+    });
+
+    btnSound.addEventListener('click', function(e) {
+      e.stopPropagation();
+      toggleSound();
+    });
+
+    document.body.addEventListener('click', function(e) {
+      if (e.target.closest('.bottom-bar')) return;
+      toggleTimer();
+    });
+
+    renderCurrentTime();
   </script>
 </body>
 </html>
