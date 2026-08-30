@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Minimal Fliqlo Pomodoro</title>
+  <title>Real Flip Pomodoro</title>
   <style>
     /* 全体のリセットと背景設定 */
     * {
@@ -34,26 +34,19 @@
       gap: 2vw;
     }
 
-    /* フリップカード風のデザイン */
-    .flip-card {
+    /* フリップユニット本体 */
+    .flip-unit {
       position: relative;
-      background-color: #1a1a1a;
-      border-radius: 12px;
-      padding: 0 4vw;
+      width: 35vw;
       height: 60vh;
-      min-width: 35vw;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      font-size: 45vh;
-      font-weight: 700;
-      letter-spacing: -2px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255,255,255,0.1);
-      overflow: hidden;
+      perspective: 1200px;
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+      background-color: #000;
     }
 
-    /* カード中央の切れ目 */
-    .flip-card::after {
+    /* 中央の切れ目 */
+    .flip-unit::after {
       content: '';
       position: absolute;
       top: 50%;
@@ -62,33 +55,93 @@
       height: 4px;
       background-color: #000000;
       transform: translateY(-50%);
-      box-shadow: 0 1px 2px rgba(255,255,255,0.05);
       z-index: 10;
     }
 
-    /* カードの上半分のシャドウ */
-    .flip-card::before {
-      content: '';
+    /* 上半分と下半分の基本スタイル */
+    .top, .bottom {
       position: absolute;
-      top: 0;
       left: 0;
       width: 100%;
       height: 50%;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0) 100%);
-      z-index: 5;
+      overflow: hidden;
+      background-color: #1a1a1a;
+      backface-visibility: hidden;
+      transform-style: preserve-3d;
     }
 
-    /* コロン（作動中に点滅） */
+    .top {
+      top: 0;
+      border-radius: 12px 12px 0 0;
+      transform-origin: bottom;
+    }
+
+    .bottom {
+      bottom: 0;
+      border-radius: 0 0 12px 12px;
+      transform-origin: top;
+    }
+
+    /* 数字のテキストを疑似要素で中央に配置 */
+    .top::after, .bottom::after {
+      content: attr(data-val);
+      position: absolute;
+      left: 0;
+      width: 100%;
+      height: 60vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-size: 45vh;
+      font-weight: 700;
+      letter-spacing: -2px;
+      color: #f5f5f5;
+    }
+
+    .top::after { top: 0; }
+    .bottom::after { bottom: 0; }
+
+    /* 立体感を出すためのグラデーションシャドウ */
+    .top::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%);
+      z-index: 1;
+    }
+
+    /* --- アニメーション用要素 --- */
+    .flip-top {
+      z-index: 5;
+      animation: flipDownTop 0.25s ease-in forwards;
+    }
+
+    .flip-bottom {
+      z-index: 5;
+      transform: rotateX(90deg);
+      animation: flipDownBottom 0.25s ease-out 0.25s forwards;
+    }
+
+    @keyframes flipDownTop {
+      0% { transform: rotateX(0); filter: brightness(1); }
+      100% { transform: rotateX(-90deg); filter: brightness(0.3); }
+    }
+
+    @keyframes flipDownBottom {
+      0% { transform: rotateX(90deg); filter: brightness(0.3); }
+      100% { transform: rotateX(0); filter: brightness(1); }
+    }
+
+    /* コロン */
     .colon {
       font-size: 20vh;
       font-weight: 700;
       padding-bottom: 5vh;
       color: #1a1a1a;
       text-shadow: 0 0 10px rgba(255,255,255,0.1);
-      animation: blink 1s infinite; /* 1秒ごとに点滅 */
+      animation: blink 1s infinite;
     }
 
-    /* 一時停止時は点滅を止めて常時点灯 */
     .paused .colon {
       animation: none;
       opacity: 1;
@@ -99,18 +152,31 @@
       50% { opacity: 0.1; }
     }
 
-    /* 下部のコントロール（FOCUS / BREAK） */
-    .controls {
+    /* --- 下部コントロールバー --- */
+    .bottom-bar {
       position: absolute;
       bottom: 8vh;
+      width: 100%;
+      padding: 0 8vw;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      z-index: 20;
+    }
+
+    /* モード選択（中央） */
+    .modes {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
       display: flex;
       gap: 3vw;
-      font-size: 2.5vh;
-      font-weight: 300;
-      letter-spacing: 3px;
     }
 
     .mode-btn {
+      font-size: 2.5vh;
+      font-weight: 300;
+      letter-spacing: 3px;
       color: #333333;
       transition: color 0.4s ease;
       padding: 10px;
@@ -120,19 +186,44 @@
     .mode-btn.active {
       color: #999999;
     }
+
+    /* フリップトグル（右端） */
+    .flip-toggle {
+      font-size: 1.8vh;
+      font-weight: 300;
+      letter-spacing: 2px;
+      color: #333333; /* 常に暗い色をキープ */
+      transition: color 0.2s ease; /* 反応を少し早めに */
+      padding: 10px;
+      cursor: pointer;
+    }
+
+    /* タップした瞬間だけ適用されるクラス */
+    .flip-toggle.flash {
+      color: #aaaaaa; 
+    }
   </style>
 </head>
 <body class="paused" id="body" onclick="toggleTimer()">
 
   <div class="timer-container">
-    <div class="flip-card" id="minutes">25</div>
+    <div class="flip-unit" id="min-unit">
+      <div class="top" data-val="25"></div>
+      <div class="bottom" data-val="25"></div>
+    </div>
     <div class="colon">:</div>
-    <div class="flip-card" id="seconds">00</div>
+    <div class="flip-unit" id="sec-unit">
+      <div class="top" data-val="00"></div>
+      <div class="bottom" data-val="00"></div>
+    </div>
   </div>
   
-  <div class="controls">
-    <div id="btn-focus" class="mode-btn active" onclick="setMode('focus', event)">FOCUS</div>
-    <div id="btn-break" class="mode-btn" onclick="setMode('break', event)">BREAK</div>
+  <div class="bottom-bar">
+    <div class="modes">
+      <div id="btn-focus" class="mode-btn active" onclick="setMode('focus', event)">FOCUS</div>
+      <div id="btn-break" class="mode-btn" onclick="setMode('break', event)">BREAK</div>
+    </div>
+    <div id="btn-flip" class="flip-toggle" onclick="toggleFlip(event)">FLIP</div>
   </div>
 
   <script>
@@ -142,19 +233,63 @@
     let timeLeft = TIME_FOCUS;
     let isRunning = false;
     let currentMode = 'focus';
+    
+    // デフォルトを「OFF（静かな切り替え）」
+    let isFlipEnabled = false; 
     let timerInterval;
 
-    const minEl = document.getElementById('minutes');
-    const secEl = document.getElementById('seconds');
     const bodyEl = document.getElementById('body');
     const btnFocus = document.getElementById('btn-focus');
     const btnBreak = document.getElementById('btn-break');
+    const btnFlip = document.getElementById('btn-flip');
 
-    function updateDisplay() {
-      const minutes = Math.floor(timeLeft / 60);
-      const seconds = timeLeft % 60;
-      minEl.textContent = minutes.toString().padStart(2, '0');
-      secEl.textContent = seconds.toString().padStart(2, '0');
+    function flip(unitId, newNumber) {
+      const unit = document.getElementById(unitId);
+      const top = unit.querySelector('.top:not(.flip-top)');
+      const bottom = unit.querySelector('.bottom:not(.flip-bottom)');
+      const currentNumber = top.getAttribute('data-val');
+      
+      if (currentNumber === newNumber) return;
+
+      unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
+
+      const flipTop = document.createElement('div');
+      flipTop.className = 'top flip-top';
+      flipTop.setAttribute('data-val', currentNumber);
+
+      const flipBottom = document.createElement('div');
+      flipBottom.className = 'bottom flip-bottom';
+      flipBottom.setAttribute('data-val', newNumber);
+
+      unit.appendChild(flipTop);
+      unit.appendChild(flipBottom);
+
+      top.setAttribute('data-val', newNumber);
+
+      flipTop.addEventListener('animationend', () => {
+        flipTop.remove();
+      });
+
+      flipBottom.addEventListener('animationend', () => {
+        bottom.setAttribute('data-val', newNumber);
+        flipBottom.remove();
+      });
+    }
+
+    function updateDisplay(forceUpdate = false) {
+      const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+      const s = (timeLeft % 60).toString().padStart(2, '0');
+
+      if (forceUpdate || !isFlipEnabled) {
+        ['min-unit', 'sec-unit'].forEach(id => {
+          const val = id === 'min-unit' ? m : s;
+          const unit = document.getElementById(id);
+          unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
+        });
+      } else {
+        flip('min-unit', m);
+        flip('sec-unit', s);
+      }
     }
 
     function toggleTimer() {
@@ -191,10 +326,25 @@
       btnFocus.classList.toggle('active', mode === 'focus');
       btnBreak.classList.toggle('active', mode === 'break');
       
-      updateDisplay();
+      updateDisplay(true);
     }
 
-    updateDisplay();
+    // FLIPアニメーションのON/OFF切り替え（一瞬だけ光る）
+    function toggleFlip(event) {
+      if (event) event.stopPropagation();
+      isFlipEnabled = !isFlipEnabled;
+      
+      // タップしたフィードバックとして一瞬明るくする
+      btnFlip.classList.add('flash');
+      
+      // 300ミリ秒後に元の暗い色に戻す
+      setTimeout(() => {
+        btnFlip.classList.remove('flash');
+      }, 300);
+    }
+
+    // 初期表示
+    updateDisplay(true);
   </script>
 </body>
 </html>
