@@ -98,19 +98,19 @@
 
     .flow-message h1 {
       font-weight: 300;
-      font-size: clamp(22px, 4.5vw, 46px);
+      font-size: clamp(24px, 5vw, 52px);
       letter-spacing: 4px;
       color: #ffffff;
-      text-shadow: 0 0 30px rgba(255,255,255,0.5);
+      text-shadow: 0 0 35px rgba(255,255,255,0.6);
       margin-bottom: 2vh;
       text-transform: uppercase;
     }
 
     .flow-message p {
       font-weight: 300;
-      font-size: clamp(13px, 2vw, 20px);
+      font-size: clamp(14px, 2.2vw, 22px);
       letter-spacing: 3px;
-      color: #aaaaaa;
+      color: #cccccc;
     }
 
     /* 最初の呼吸メッセージ */
@@ -478,24 +478,24 @@
         focusLabel.textContent = "UNSTOPPABLE MOMENTUM • KEEP BURNING";
       } else if (tier === 10) {
         msgTitle.textContent = "Legendary Deep Work";
-        msgSub.textContent = "Absolute mastery of time and mind.";
+        msgSub.textContent = "Absolute mastery of time, mind, and space.";
         focusLabel.textContent = "LEGENDARY DEEP WORK • PURE GENIUS";
       } else if (tier === 15) {
         msgTitle.textContent = "Pure Genius";
-        msgSub.textContent = "Absolute mastery. You own this realm.";
+        msgSub.textContent = "You have transcended ordinary productivity altogether.";
         focusLabel.textContent = "TRANSCENDENT STATE • UNBREAKABLE FOCUS";
       } else if (tier === 20) {
         msgTitle.textContent = "Unstoppable Force";
-        msgSub.textContent = "You are operating in a completely different dimension.";
+        msgSub.textContent = "Operating in a completely different dimension of thought.";
         focusLabel.textContent = "OTHERWORLDLY FLOW • MAXIMUM VELOCITY";
       } else if (tier === 25) {
         msgTitle.textContent = "Time to Rest?";
-        msgSub.textContent = "The system suggests a break... but who could stop you now?";
-        focusLabel.textContent = "BEYOND THE POMODORO • UNSTOPPABLE";
+        msgSub.textContent = "The system suggests a break... but who could possibly stop you now?";
+        focusLabel.textContent = "BEYOND THE POMODORO • TOO POWERFUL TO STOP";
       }
     }
 
-    // 演出を発動する（呼吸する美しい出現イベント）
+    // 演出を発動する（呼吸する美しい出現イベント。表示時間を約2倍の 8.5秒 に延長！）
     function triggerFlowTransition(tier) {
       setTierContent(tier);
       transitionStartTime = Date.now();
@@ -510,7 +510,7 @@
       messageTimeoutId = setTimeout(() => {
         bodyEl.classList.remove('show-message');
         renderCurrentTime(false);
-      }, 5000); // 5秒間呼吸するように美しく表示
+      }, 8500); // 8.5秒間たっぷり味わえるように延長！
     }
 
     function startTimer(e) {
@@ -557,7 +557,8 @@
                 triggerFlowTransition(25);
               }
 
-              const isMessageShowing = (Date.now() - transitionStartTime) < 5000;
+              // メッセージ表示中（8.5秒間）は時計のカウントアップ・flipを一時停止（演出に全集中させる）
+              const isMessageShowing = (Date.now() - transitionStartTime) < 8500;
               renderCurrentTime(!isMessageShowing);
             }, 1000);
           }
