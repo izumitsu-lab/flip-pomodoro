@@ -23,7 +23,7 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: center;
+      align-items: center; /* 完全に画面の中央に配置 */
       overflow: hidden;
       cursor: pointer;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
@@ -34,21 +34,21 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      width: 90vw;
-      max-width: 1200px;
-      height: 60vh;
-      max-height: 800px;
-      gap: 4%; 
-      margin-top: -5vh; 
+      width: 100%;
+      gap: 3vw; 
+      /* 上へのズレ（margin-top）を削除し、純粋な中央配置に */
     }
 
     /* フリップユニット本体 */
     .flip-unit {
       position: relative;
-      flex: 1; 
-      height: 100%;
-      aspect-ratio: 3 / 4; 
-      max-width: 45%; 
+      /* 縦横比を Fliqlo に近い 4:5 に完全に固定 */
+      aspect-ratio: 4 / 5; 
+      
+      /* 画面の高さ(vh)と幅(vw)から、はみ出さない「最大かつ最適な高さ」を自動計算 */
+      height: min(72vh, 52vw); 
+      max-height: 800px;
+      
       perspective: 1200px;
       border-radius: 4cqmin; 
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
@@ -109,15 +109,14 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* フォントサイズを少し調整し、文字間隔を広げました */
-      font-size: 80cqi; 
+      /* 比率が固定されたので、文字を限界まで大きく */
+      font-size: 88cqi; 
       font-weight: 700;
-      /* くっつきすぎないようにレタースペーシングを調整（0またはごくわずかなマイナスに） */
       letter-spacing: -1px; 
       color: #f5f5f5;
     }
 
-    @supports not (font-size: 80cqi) {
+    @supports not (font-size: 88cqi) {
       .top::after, .bottom::after {
         font-size: clamp(100px, 40vw, 400px);
       }
@@ -162,8 +161,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100%;
-      font-size: clamp(80px, 30vh, 250px);
+      /* ユニットの高さに合わせてコロンの大きさも自動追従 */
+      height: min(72vh, 52vw); 
+      font-size: min(25vh, 18vw); 
       font-weight: 700;
       padding-bottom: 5%; 
       color: #1a1a1a;
