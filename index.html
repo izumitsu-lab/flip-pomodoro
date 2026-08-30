@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
-  <title>Flip 2-Min Flow</title>
+  <title>Focus 2min</title>
 
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Flip Flow">
+  <meta name="apple-mobile-web-app-title" content="Focus 2min">
 
   <style>
     * {
@@ -24,7 +24,7 @@
     body {
       background-color: #000000;
       color: #e0e0e0;
-      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Meiryo", sans-serif;
       height: 100vh;
       width: 100vw;
       display: flex;
@@ -34,19 +34,7 @@
       overflow: hidden;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       position: relative;
-    }
-
-    /* 全画面タッチレイヤー */
-    .touch-layer {
-      position: fixed;
-      inset: 0;
-      z-index: 999;
-      background: transparent;
       cursor: pointer;
-    }
-
-    body.running .touch-layer {
-      pointer-events: none; 
     }
 
     /* フラッシュ演出用レイヤー */
@@ -98,18 +86,17 @@
 
     .flow-message h1 {
       font-weight: 300;
-      font-size: clamp(24px, 5vw, 52px);
-      letter-spacing: 4px;
+      font-size: clamp(22px, 4.5vw, 44px);
+      letter-spacing: 0.15em;
       color: #ffffff;
       text-shadow: 0 0 35px rgba(255,255,255,0.6);
       margin-bottom: 2vh;
-      text-transform: uppercase;
     }
 
     .flow-message p {
       font-weight: 300;
-      font-size: clamp(14px, 2.2vw, 22px);
-      letter-spacing: 3px;
+      font-size: clamp(13px, 2vw, 18px);
+      letter-spacing: 0.2em;
       color: #cccccc;
     }
 
@@ -125,8 +112,8 @@
       left: 50%;
       transform: translate(-50%, -50%);
       font-weight: 300;
-      font-size: clamp(18px, 3.5vw, 32px);
-      letter-spacing: 4px;
+      font-size: clamp(16px, 3.2vw, 28px);
+      letter-spacing: 0.15em;
       color: #666666; 
       text-align: center;
       z-index: 20;
@@ -146,17 +133,16 @@
       animation: none;
     }
 
-    /* 下部に堂々と佇む「インフレする集中モード」のメッセージ */
+    /* 下部に堂々と佇む日本語の集中モード・ラベル */
     .focus-mode-label {
       position: absolute;
       bottom: 8vh;
       left: 50%;
       transform: translateX(-50%);
       font-weight: 300;
-      font-size: clamp(14px, 2.5vh, 20px);
-      letter-spacing: 5px;
+      font-size: clamp(13px, 2.2vh, 18px);
+      letter-spacing: 0.3em;
       color: #888888;
-      text-transform: uppercase;
       text-align: center;
       opacity: 0;
       pointer-events: none;
@@ -267,6 +253,7 @@
       font-weight: 700;
       letter-spacing: -2px; 
       color: #f5f5f5;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     }
 
     @supports not (font-size: 78cqi) {
@@ -319,6 +306,7 @@
       color: #1a1a1a;
       text-shadow: 0 0 10px rgba(255,255,255,0.1);
       animation: blink 1s infinite;
+      font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif;
     }
 
     .running .colon {
@@ -349,22 +337,21 @@
 </head>
 <body id="body">
 
-  <div id="touch-layer" class="touch-layer"></div>
   <div id="flash-overlay" class="flash-overlay"></div>
 
   <!-- インフレする褒め言葉＆メッセージのポップアップ -->
   <div class="flow-message" id="flow-message-box">
-    <h1 id="msg-title">You're in the flow</h1>
-    <p id="msg-sub">Keep going. The rest is yours.</p>
+    <h1 id="msg-title">フロー状態へ突入</h1>
+    <p id="msg-sub">ここから先は、あなたの自由な時間です。</p>
   </div>
 
   <div class="initial-breathing-text">
-    Just focus for 2 minutes. The rest is yours.
+    2分だけ集中してみよう。<br>残りはあなたの時間だから
   </div>
 
   <!-- 下部に常駐するインフレする集中モードのラベル -->
   <div class="focus-mode-label" id="focus-label">
-    KEEP FOCUS
+    集中持続中 • フロー展開
   </div>
 
   <div class="timer-container">
@@ -391,11 +378,10 @@
     let messageTimeoutId;
     let transitionStartTime = 0;
     
-    let lastTriggeredTier = 2; // 2分到達時に初期ティア発動済みとする
+    let lastTriggeredTier = 2; 
 
     const bodyEl = document.getElementById('body');
     const flashOverlay = document.getElementById('flash-overlay');
-    const touchLayer = document.getElementById('touch-layer');
     const msgTitle = document.getElementById('msg-title');
     const msgSub = document.getElementById('msg-sub');
     const focusLabel = document.getElementById('focus-label');
@@ -466,36 +452,34 @@
       }
     }
 
-    // インフレする褒め言葉のセットを切り替える関数
     function setTierContent(tier) {
       if (tier === 2) {
-        msgTitle.textContent = "You're in the flow";
-        msgSub.textContent = "Keep going. The rest is yours.";
-        focusLabel.textContent = "KEEP FOCUS • THE FLOW AWAITS";
+        msgTitle.textContent = "フロー状態へ突入";
+        msgSub.textContent = "ここから先は、あなたの自由な時間です。";
+        focusLabel.textContent = "集中持続中 • フロー展開";
       } else if (tier === 5) {
-        msgTitle.textContent = "Amazing Focus!";
-        msgSub.textContent = "You are completely unstoppable right now.";
-        focusLabel.textContent = "UNSTOPPABLE MOMENTUM • KEEP BURNING";
+        msgTitle.textContent = "素晴らしい集中";
+        msgSub.textContent = "もう、誰にもあなたの勢いは止められません。";
+        focusLabel.textContent = "加速する勢い • 絶好調の波に乗る";
       } else if (tier === 10) {
-        msgTitle.textContent = "Legendary Deep Work";
-        msgSub.textContent = "Absolute mastery of time, mind, and space.";
-        focusLabel.textContent = "LEGENDARY DEEP WORK • PURE GENIUS";
+        msgTitle.textContent = "伝説的なディープワーク";
+        msgSub.textContent = "時間と空間の感覚が、完全に研ぎ澄まされました。";
+        focusLabel.textContent = "至高の領域 • 純粋なる知性の集中";
       } else if (tier === 15) {
-        msgTitle.textContent = "Pure Genius";
-        msgSub.textContent = "You have transcended ordinary productivity altogether.";
-        focusLabel.textContent = "TRANSCENDENT STATE • UNBREAKABLE FOCUS";
+        msgTitle.textContent = "圧倒的な才能";
+        msgSub.textContent = "もはや通常の生産性の枠を、完全に超越しています。";
+        focusLabel.textContent = "超越的境地 • 揺るぎなき意志";
       } else if (tier === 20) {
-        msgTitle.textContent = "Unstoppable Force";
-        msgSub.textContent = "Operating in a completely different dimension of thought.";
-        focusLabel.textContent = "OTHERWORLDLY FLOW • MAXIMUM VELOCITY";
+        msgTitle.textContent = "完全なる覚醒";
+        msgSub.textContent = "あなたは今、完全に別の次元で思考しています。";
+        focusLabel.textContent = "異次元のフロー • 最高速度で進行中";
       } else if (tier === 25) {
-        msgTitle.textContent = "Time to Rest?";
-        msgSub.textContent = "The system suggests a break... but who could possibly stop you now?";
-        focusLabel.textContent = "BEYOND THE POMODORO • TOO POWERFUL TO STOP";
+        msgTitle.textContent = "そろそろ休憩ですが……？";
+        msgSub.textContent = "システムは休憩を推奨しますが、今のあなたを止めるのは不可能のようです。";
+        focusLabel.textContent = "ポモドーロの限界突破 • 止まらない情熱";
       }
     }
 
-    // 演出を発動する（呼吸する美しい出現イベント。表示時間を約2倍の 8.5秒 に延長！）
     function triggerFlowTransition(tier) {
       setTierContent(tier);
       transitionStartTime = Date.now();
@@ -510,11 +494,14 @@
       messageTimeoutId = setTimeout(() => {
         bodyEl.classList.remove('show-message');
         renderCurrentTime(false);
-      }, 8500); // 8.5秒間たっぷり味わえるように延長！
+      }, 8500); 
     }
 
     function startTimer(e) {
-      if (e) e.stopPropagation();
+      if (e) {
+        e.stopPropagation();
+        e.preventDefault();
+      }
       if (isRunning) return; 
 
       isRunning = true;
@@ -529,17 +516,15 @@
             clearInterval(timerInterval);
             
             currentMode = 'flow';
-            elapsedSeconds = PREP_TIME; // 120秒（2分）からスタート
+            elapsedSeconds = PREP_TIME; 
             bodyEl.classList.remove('mode-prep');
             bodyEl.classList.add('mode-flow');
             
-            // 2分到達の演出
             triggerFlowTransition(2);
             
             timerInterval = setInterval(() => {
               elapsedSeconds++;
               
-              // インフレ判定：5分(300), 10分(600), 15分(900), 20分(1200), 25分(1500)のジャストタイミング
               if (elapsedSeconds === 300 && lastTriggeredTier < 5) {
                 lastTriggeredTier = 5;
                 triggerFlowTransition(5);
@@ -557,7 +542,6 @@
                 triggerFlowTransition(25);
               }
 
-              // メッセージ表示中（8.5秒間）は時計のカウントアップ・flipを一時停止（演出に全集中させる）
               const isMessageShowing = (Date.now() - transitionStartTime) < 8500;
               renderCurrentTime(!isMessageShowing);
             }, 1000);
@@ -566,11 +550,8 @@
       }, 1000);
     }
 
-    touchLayer.addEventListener('click', startTimer);
-    touchLayer.addEventListener('touchend', function(e) {
-      e.preventDefault();
-      startTimer(e);
-    });
+    bodyEl.addEventListener('click', startTimer);
+    bodyEl.addEventListener('touchend', startTimer);
 
     renderCurrentTime();
   </script>
