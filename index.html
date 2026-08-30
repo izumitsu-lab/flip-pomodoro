@@ -36,7 +36,7 @@
       position: relative;
     }
 
-    /* iPhoneのタッチ抜けを100%防ぐための全画面インタラクティブ・レイヤー */
+    /* iPhoneのタッチ抜けを完全に防ぐ専用レイヤー */
     .touch-layer {
       position: fixed;
       inset: 0;
@@ -46,7 +46,7 @@
     }
 
     body.running .touch-layer {
-      pointer-events: none; /* スタート後はタッチを無効化して邪魔をさせない */
+      pointer-events: none; 
     }
 
     /* 中央から左右に広がるフラッシュエフェクト用レイヤー */
@@ -129,7 +129,6 @@
       padding: 0 5vw;
     }
 
-    /* スタートした瞬間（running）、文字がフワッと白くなり呼吸を始める */
     body.running .initial-breathing-text {
       color: #ffffff;
       animation: breathing 4s ease-in-out infinite;
@@ -139,6 +138,32 @@
       opacity: 0 !important;
       pointer-events: none;
       animation: none;
+    }
+
+    /* 後半のフリップ表示中に下部に現れる「集中モード」のメッセージ */
+    .focus-mode-label {
+      position: absolute;
+      bottom: 10vh;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 300;
+      font-size: clamp(12px, 2vh, 16px);
+      letter-spacing: 4px;
+      color: #555555;
+      text-transform: uppercase;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1s ease 0.5s; /* 時計が出てきてから少し遅れてフワッと現れる */
+      z-index: 10;
+    }
+
+    body.mode-flow .focus-mode-label {
+      opacity: 1;
+    }
+
+    body.show-message .focus-mode-label {
+      opacity: 0; /* メッセージ表示中は一旦隠す */
     }
 
     /* タイマーコンテナ */
@@ -309,12 +334,14 @@
       .colon {
         display: none; 
       }
+      .focus-mode-label {
+        bottom: 7vh;
+      }
     }
   </style>
 </head>
 <body id="body">
 
-  <!-- iPhoneのタッチ抜けを完全に防ぐ専用レイヤー -->
   <div id="touch-layer" class="touch-layer"></div>
 
   <div id="flash-overlay" class="flash-overlay"></div>
@@ -326,6 +353,11 @@
 
   <div class="initial-breathing-text">
     Just focus for 2 minutes. The rest is yours.
+  </div>
+
+  <!-- 後半のフリップ表示中に下部に表示される集中メッセージ -->
+  <div class="focus-mode-label">
+    KEEP FOCUS
   </div>
 
   <div class="timer-container">
@@ -469,7 +501,6 @@
       }, 1000);
     }
 
-    // iPhone（touchend）とMac（click）の両方で確実かつ一瞬で拾うリスナー
     touchLayer.addEventListener('click', startTimer);
     touchLayer.addEventListener('touchend', function(e) {
       e.preventDefault();
