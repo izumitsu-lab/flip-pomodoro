@@ -36,7 +36,7 @@
       position: relative;
     }
 
-    /* iPhoneのタッチ抜けを完全に防ぐ専用レイヤー */
+    /* 全画面タッチレイヤー */
     .touch-layer {
       position: fixed;
       inset: 0;
@@ -49,7 +49,7 @@
       pointer-events: none; 
     }
 
-    /* 中央から左右に広がるフラッシュエフェクト用レイヤー */
+    /* フラッシュ演出用レイヤー */
     .flash-overlay {
       position: absolute;
       top: 0;
@@ -72,7 +72,12 @@
       animation: centerFlash 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* 2分経過後のスタイリッシュな英語メッセージ */
+    /* 呼吸するように美しく明滅するインフレ・メッセージ（ポップアップ） */
+    @keyframes breathingMessage {
+      0%, 100% { opacity: 0.4; transform: translate(-50%, -50%) scale(0.97); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.02); }
+    }
+
     .flow-message {
       position: absolute;
       top: 50%;
@@ -82,12 +87,13 @@
       z-index: 110;
       pointer-events: none;
       opacity: 0;
-      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: opacity 0.8s ease;
+      width: 90vw;
     }
 
     body.show-message .flow-message {
       opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
+      animation: breathingMessage 3s ease-in-out infinite;
     }
 
     .flow-message h1 {
@@ -95,8 +101,8 @@
       font-size: clamp(22px, 4.5vw, 46px);
       letter-spacing: 4px;
       color: #ffffff;
-      text-shadow: 0 0 25px rgba(255,255,255,0.4);
-      margin-bottom: 1.5vh;
+      text-shadow: 0 0 30px rgba(255,255,255,0.5);
+      margin-bottom: 2vh;
       text-transform: uppercase;
     }
 
@@ -104,10 +110,10 @@
       font-weight: 300;
       font-size: clamp(13px, 2vw, 20px);
       letter-spacing: 3px;
-      color: #888888;
+      color: #aaaaaa;
     }
 
-    /* 呼吸するように優しく明滅する美しいアニメーション */
+    /* 最初の呼吸メッセージ */
     @keyframes breathing {
       0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.98); }
       50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -119,7 +125,7 @@
       left: 50%;
       transform: translate(-50%, -50%);
       font-weight: 300;
-      font-size: clamp(16px, 3.2vw, 30px);
+      font-size: clamp(18px, 3.5vw, 32px);
       letter-spacing: 4px;
       color: #666666; 
       text-align: center;
@@ -140,22 +146,23 @@
       animation: none;
     }
 
-    /* 後半のフリップ表示中に下部に現れる「集中モード」のメッセージ */
+    /* 下部に堂々と佇む「インフレする集中モード」のメッセージ */
     .focus-mode-label {
       position: absolute;
-      bottom: 10vh;
+      bottom: 8vh;
       left: 50%;
       transform: translateX(-50%);
       font-weight: 300;
-      font-size: clamp(12px, 2vh, 16px);
-      letter-spacing: 4px;
-      color: #555555;
+      font-size: clamp(14px, 2.5vh, 20px);
+      letter-spacing: 5px;
+      color: #888888;
       text-transform: uppercase;
       text-align: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 1s ease 0.5s; /* 時計が出てきてから少し遅れてフワッと現れる */
+      transition: opacity 1s ease 0.5s, color 0.5s ease;
       z-index: 10;
+      width: 90vw;
     }
 
     body.mode-flow .focus-mode-label {
@@ -163,7 +170,7 @@
     }
 
     body.show-message .focus-mode-label {
-      opacity: 0; /* メッセージ表示中は一旦隠す */
+      opacity: 0; 
     }
 
     /* タイマーコンテナ */
@@ -335,7 +342,7 @@
         display: none; 
       }
       .focus-mode-label {
-        bottom: 7vh;
+        bottom: 6vh;
       }
     }
   </style>
@@ -343,20 +350,20 @@
 <body id="body">
 
   <div id="touch-layer" class="touch-layer"></div>
-
   <div id="flash-overlay" class="flash-overlay"></div>
 
-  <div class="flow-message">
-    <h1>You're in the flow</h1>
-    <p>Keep going. The rest is yours.</p>
+  <!-- インフレする褒め言葉＆メッセージのポップアップ -->
+  <div class="flow-message" id="flow-message-box">
+    <h1 id="msg-title">You're in the flow</h1>
+    <p id="msg-sub">Keep going. The rest is yours.</p>
   </div>
 
   <div class="initial-breathing-text">
     Just focus for 2 minutes. The rest is yours.
   </div>
 
-  <!-- 後半のフリップ表示中に下部に表示される集中メッセージ -->
-  <div class="focus-mode-label">
+  <!-- 下部に常駐するインフレする集中モードのラベル -->
+  <div class="focus-mode-label" id="focus-label">
     KEEP FOCUS
   </div>
 
@@ -383,10 +390,15 @@
     let timerInterval;
     let messageTimeoutId;
     let transitionStartTime = 0;
+    
+    let lastTriggeredTier = 2; // 2分到達時に初期ティア発動済みとする
 
     const bodyEl = document.getElementById('body');
     const flashOverlay = document.getElementById('flash-overlay');
     const touchLayer = document.getElementById('touch-layer');
+    const msgTitle = document.getElementById('msg-title');
+    const msgSub = document.getElementById('msg-sub');
+    const focusLabel = document.getElementById('focus-label');
 
     function updateDisplayDirect(mStr, sStr) {
       ['min-unit', 'sec-unit'].forEach(id => {
@@ -454,7 +466,38 @@
       }
     }
 
-    function triggerFlowTransition() {
+    // インフレする褒め言葉のセットを切り替える関数
+    function setTierContent(tier) {
+      if (tier === 2) {
+        msgTitle.textContent = "You're in the flow";
+        msgSub.textContent = "Keep going. The rest is yours.";
+        focusLabel.textContent = "KEEP FOCUS • THE FLOW AWAITS";
+      } else if (tier === 5) {
+        msgTitle.textContent = "Amazing Focus!";
+        msgSub.textContent = "You are completely unstoppable right now.";
+        focusLabel.textContent = "UNSTOPPABLE MOMENTUM • KEEP BURNING";
+      } else if (tier === 10) {
+        msgTitle.textContent = "Legendary Deep Work";
+        msgSub.textContent = "Absolute mastery of time and mind.";
+        focusLabel.textContent = "LEGENDARY DEEP WORK • PURE GENIUS";
+      } else if (tier === 15) {
+        msgTitle.textContent = "Pure Genius";
+        msgSub.textContent = "Absolute mastery. You own this realm.";
+        focusLabel.textContent = "TRANSCENDENT STATE • UNBREAKABLE FOCUS";
+      } else if (tier === 20) {
+        msgTitle.textContent = "Unstoppable Force";
+        msgSub.textContent = "You are operating in a completely different dimension.";
+        focusLabel.textContent = "OTHERWORLDLY FLOW • MAXIMUM VELOCITY";
+      } else if (tier === 25) {
+        msgTitle.textContent = "Time to Rest?";
+        msgSub.textContent = "The system suggests a break... but who could stop you now?";
+        focusLabel.textContent = "BEYOND THE POMODORO • UNSTOPPABLE";
+      }
+    }
+
+    // 演出を発動する（呼吸する美しい出現イベント）
+    function triggerFlowTransition(tier) {
+      setTierContent(tier);
       transitionStartTime = Date.now();
 
       flashOverlay.classList.remove('flash-trigger');
@@ -467,7 +510,7 @@
       messageTimeoutId = setTimeout(() => {
         bodyEl.classList.remove('show-message');
         renderCurrentTime(false);
-      }, 5000);
+      }, 5000); // 5秒間呼吸するように美しく表示
     }
 
     function startTimer(e) {
@@ -486,13 +529,34 @@
             clearInterval(timerInterval);
             
             currentMode = 'flow';
-            elapsedSeconds = PREP_TIME; 
+            elapsedSeconds = PREP_TIME; // 120秒（2分）からスタート
+            bodyEl.classList.remove('mode-prep');
             bodyEl.classList.add('mode-flow');
             
-            triggerFlowTransition();
+            // 2分到達の演出
+            triggerFlowTransition(2);
             
             timerInterval = setInterval(() => {
               elapsedSeconds++;
+              
+              // インフレ判定：5分(300), 10分(600), 15分(900), 20分(1200), 25分(1500)のジャストタイミング
+              if (elapsedSeconds === 300 && lastTriggeredTier < 5) {
+                lastTriggeredTier = 5;
+                triggerFlowTransition(5);
+              } else if (elapsedSeconds === 600 && lastTriggeredTier < 10) {
+                lastTriggeredTier = 10;
+                triggerFlowTransition(10);
+              } else if (elapsedSeconds === 900 && lastTriggeredTier < 15) {
+                lastTriggeredTier = 15;
+                triggerFlowTransition(15);
+              } else if (elapsedSeconds === 1200 && lastTriggeredTier < 20) {
+                lastTriggeredTier = 20;
+                triggerFlowTransition(20);
+              } else if (elapsedSeconds === 1500 && lastTriggeredTier < 25) {
+                lastTriggeredTier = 25;
+                triggerFlowTransition(25);
+              }
+
               const isMessageShowing = (Date.now() - transitionStartTime) < 5000;
               renderCurrentTime(!isMessageShowing);
             }, 1000);
