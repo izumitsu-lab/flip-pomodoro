@@ -32,9 +32,21 @@
       justify-content: center;
       align-items: center;
       overflow: hidden;
-      cursor: pointer;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
       position: relative;
+    }
+
+    /* iPhoneのタッチ抜けを100%防ぐための全画面インタラクティブ・レイヤー */
+    .touch-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    body.running .touch-layer {
+      pointer-events: none; /* スタート後はタッチを無効化して邪魔をさせない */
     }
 
     /* 中央から左右に広がるフラッシュエフェクト用レイヤー */
@@ -109,7 +121,7 @@
       font-weight: 300;
       font-size: clamp(16px, 3.2vw, 30px);
       letter-spacing: 4px;
-      color: #666666; /* 最初は静止時の色 */
+      color: #666666; 
       text-align: center;
       z-index: 20;
       pointer-events: none;
@@ -172,7 +184,7 @@
     @supports not (border-radius: 3cqmin) {
       .flip-unit { border-radius: 12px; }
       .top { border-radius: 12px 12px 0 0; }
-      .bottom { border-radius: 0 0 12px 12px; }
+      .bottom { border-radius: 0 0 16px 16px; }
     }
 
     .flip-unit::after {
@@ -302,6 +314,9 @@
 </head>
 <body id="body">
 
+  <!-- iPhoneのタッチ抜けを完全に防ぐ専用レイヤー -->
+  <div id="touch-layer" class="touch-layer"></div>
+
   <div id="flash-overlay" class="flash-overlay"></div>
 
   <div class="flow-message">
@@ -339,6 +354,7 @@
 
     const bodyEl = document.getElementById('body');
     const flashOverlay = document.getElementById('flash-overlay');
+    const touchLayer = document.getElementById('touch-layer');
 
     function updateDisplayDirect(mStr, sStr) {
       ['min-unit', 'sec-unit'].forEach(id => {
@@ -422,12 +438,12 @@
       }, 5000);
     }
 
-    // 画面がクリックされたら100%確実にタイマーを起動
-    window.addEventListener('click', function() {
-      if (isRunning) return; // 二重起動防止
+    function startTimer(e) {
+      if (e) e.stopPropagation();
+      if (isRunning) return; 
 
       isRunning = true;
-      bodyEl.classList.add('running'); // これで文字が白くなり、呼吸アニメーションがスタートする
+      bodyEl.classList.add('running'); 
       
       timerInterval = setInterval(() => {
         if (currentMode === 'prep') {
@@ -451,6 +467,13 @@
           }
         }
       }, 1000);
+    }
+
+    // iPhone（touchend）とMac（click）の両方で確実かつ一瞬で拾うリスナー
+    touchLayer.addEventListener('click', startTimer);
+    touchLayer.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      startTimer(e);
     });
 
     renderCurrentTime();
