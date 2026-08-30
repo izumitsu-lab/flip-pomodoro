@@ -13,7 +13,6 @@
   <meta name="apple-mobile-web-app-title" content="Flip Flow">
 
   <style>
-    /* 全体のリセットと背景設定 */
     * {
       box-sizing: border-box;
       margin: 0;
@@ -52,33 +51,21 @@
     }
 
     @keyframes centerFlash {
-      0% {
-        left: 50%;
-        width: 0%;
-        opacity: 1;
-      }
-      40% {
-        left: 0%;
-        width: 100%;
-        opacity: 0.9;
-      }
-      100% {
-        left: 0%;
-        width: 100%;
-        opacity: 0;
-      }
+      0% { left: 50%; width: 0%; opacity: 1; }
+      40% { left: 0%; width: 100%; opacity: 0.9; }
+      100% { left: 0%; width: 100%; opacity: 0; }
     }
 
     .flash-trigger {
       animation: centerFlash 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
-    /* 2分経過後のスタイリッシュな英語メッセージ（ポップアップ） */
+    /* 2分経過後のスタイリッシュな英語メッセージ */
     .flow-message {
       position: absolute;
-      top: 38%;
+      top: 50%;
       left: 50%;
-      transform: translate(-50%, -50%) scale(0.9);
+      transform: translate(-50%, -50%) scale(0.95);
       text-align: center;
       z-index: 110;
       pointer-events: none;
@@ -93,19 +80,53 @@
 
     .flow-message h1 {
       font-weight: 300;
-      font-size: clamp(20px, 4vw, 42px);
+      font-size: clamp(22px, 4.5vw, 46px);
       letter-spacing: 4px;
       color: #ffffff;
-      text-shadow: 0 0 20px rgba(255,255,255,0.3);
-      margin-bottom: 1vh;
+      text-shadow: 0 0 25px rgba(255,255,255,0.4);
+      margin-bottom: 1.5vh;
       text-transform: uppercase;
     }
 
     .flow-message p {
       font-weight: 300;
-      font-size: clamp(12px, 1.8vw, 18px);
+      font-size: clamp(13px, 2vw, 20px);
       letter-spacing: 3px;
       color: #888888;
+    }
+
+    /* 呼吸するように優しく明滅する美しいアニメーション */
+    @keyframes breathing {
+      0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.98); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    .initial-breathing-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-weight: 300;
+      font-size: clamp(16px, 3.2vw, 30px);
+      letter-spacing: 4px;
+      color: #666666; /* 最初は静止時の色 */
+      text-align: center;
+      z-index: 20;
+      pointer-events: none;
+      transition: color 0.8s ease;
+      padding: 0 5vw;
+    }
+
+    /* スタートした瞬間（running）、文字がフワッと白くなり呼吸を始める */
+    body.running .initial-breathing-text {
+      color: #ffffff;
+      animation: breathing 4s ease-in-out infinite;
+    }
+
+    body.mode-flow .initial-breathing-text {
+      opacity: 0 !important;
+      pointer-events: none;
+      animation: none;
     }
 
     /* タイマーコンテナ */
@@ -116,7 +137,22 @@
       width: 100%;
       gap: 3vw; 
       transform: translateY(-3vh); 
-      transition: all 0.5s ease; 
+      opacity: 0;
+      transform: translateY(-3vh) scale(0.95);
+      pointer-events: none;
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body.mode-flow .timer-container {
+      opacity: 1;
+      transform: translateY(-3vh) scale(1);
+      pointer-events: auto;
+    }
+
+    body.show-message .timer-container {
+      opacity: 0;
+      transform: translateY(-3vh) scale(0.95);
+      pointer-events: none;
     }
 
     /* フリップユニット本体 */
@@ -139,7 +175,6 @@
       .bottom { border-radius: 0 0 12px 12px; }
     }
 
-    /* 中央の切れ目 */
     .flip-unit::after {
       content: '';
       position: absolute;
@@ -152,23 +187,15 @@
       z-index: 10;
     }
 
-    /* 上半分と下半分の基本スタイル */
     .top, .bottom {
       position: absolute;
       left: 0;
       width: 100%;
       height: 50%;
       overflow: hidden;
-      background-color: #1a1a1a;
+      background-color: #242424;
       backface-visibility: hidden;
       transform-style: preserve-3d;
-      transition: background-color 0.8s ease;
-    }
-
-    /* フローモード時のカード背景 */
-    body.mode-flow .top, 
-    body.mode-flow .bottom {
-      background-color: #242424;
     }
 
     .top {
@@ -183,7 +210,6 @@
       transform-origin: top;
     }
 
-    /* 数字のテキスト設定 */
     .top::after, .bottom::after {
       content: attr(data-val);
       position: absolute;
@@ -208,7 +234,6 @@
     .top::after { top: 0; }
     .bottom::after { bottom: 0; }
 
-    /* 立体感を出すためのグラデーションシャドウ */
     .top::before {
       content: '';
       position: absolute;
@@ -217,7 +242,7 @@
       z-index: 1;
     }
 
-    /* --- アニメーション用要素 --- */
+    /* --- パタパタアニメーション用要素 --- */
     .flip-top {
       z-index: 5;
       animation: flipDownTop 0.25s ease-in forwards;
@@ -252,9 +277,8 @@
       animation: blink 1s infinite;
     }
 
-    .paused .colon {
-      animation: none;
-      opacity: 1;
+    .running .colon {
+      animation: blink 1s infinite;
     }
 
     @keyframes blink {
@@ -262,71 +286,10 @@
       50% { opacity: 0.1; }
     }
 
-    /* --- 下部コントロールバー --- */
-    .bottom-bar {
-      position: absolute;
-      bottom: calc(env(safe-area-inset-bottom, 10px) + 5px);
-      width: 100%;
-      padding: 0 calc(env(safe-area-inset-right, 5vw) + 2vw) 0 calc(env(safe-area-inset-left, 5vw) + 2vw);
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      z-index: 20;
-    }
-
-    /* モード表示（中央に絶対配置） */
-    .modes {
-      position: absolute;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 4vw;
-    }
-
-    .mode-btn {
-      font-size: clamp(14px, 2.5vh, 24px);
-      font-weight: 300;
-      letter-spacing: 3px;
-      color: #333333;
-      transition: color 0.4s ease;
-      padding: 8px 15px; 
-      cursor: pointer;
-    }
-
-    .mode-btn.active {
-      color: #999999;
-    }
-
-    /* 右側の設定トグル群 */
-    .toggles {
-      display: flex;
-      gap: 1vw;
-    }
-
-    .setting-toggle {
-      font-size: clamp(12px, 2vh, 18px);
-      font-weight: 300;
-      letter-spacing: 2px;
-      color: #333333;
-      transition: color 0.3s ease;
-      padding: 8px 10px;
-      cursor: pointer;
-      min-width: 80px; 
-      text-align: center;
-    }
-
-    .setting-toggle.flash {
-      color: #e0e0e0; 
-    }
-
-    /* =========================================
-       📱 スマホ縦画面（ポートレート）用の上書き設定
-       ========================================= */
     @media (orientation: portrait) {
       .timer-container {
         flex-direction: column; 
         gap: 2vh; 
-        transform: translateY(-5vh); 
       }
       .flip-unit {
         width: min(80vw, 32vh); 
@@ -334,32 +297,20 @@
       .colon {
         display: none; 
       }
-      
-      .bottom-bar {
-        justify-content: center;
-        bottom: calc(env(safe-area-inset-bottom, 20px) + 5vh);
-      }
-      
-      .modes {
-        position: relative;
-        left: 0;
-        transform: none;
-        gap: 10vw; 
-      }
-      
-      .toggles {
-        display: none;
-      }
     }
   </style>
 </head>
-<body class="paused" id="body">
+<body id="body">
 
   <div id="flash-overlay" class="flash-overlay"></div>
 
   <div class="flow-message">
     <h1>You're in the flow</h1>
-    <p>Keep going, you're free now.</p>
+    <p>Keep going. The rest is yours.</p>
+  </div>
+
+  <div class="initial-breathing-text">
+    Just focus for 2 minutes. The rest is yours.
   </div>
 
   <div class="timer-container">
@@ -373,90 +324,30 @@
       <div class="bottom" data-val="00"></div>
     </div>
   </div>
-  
-  <div class="bottom-bar">
-    <div class="modes">
-      <div id="btn-prep" class="mode-btn active">2-MIN PREP</div>
-      <div id="btn-flow" class="mode-btn">WORK FLOW</div>
-    </div>
-    <div class="toggles">
-      <div id="btn-sound" class="setting-toggle">SOUND</div>
-      <div id="btn-flip" class="setting-toggle">FLIP</div>
-    </div>
-  </div>
 
   <script>
-    const PREP_TIME = 2 * 60; // 最初の2分間
+    const PREP_TIME = 2 * 60; // 2分
 
     let timeLeft = PREP_TIME;
-    let elapsedSeconds = 0; 
+    let elapsedSeconds = PREP_TIME; 
     let isRunning = false;
     let currentMode = 'prep'; 
     
-    let isFlipEnabled = true;  
-    let isSoundEnabled = false; 
-    
     let timerInterval;
-    let audioCtx; 
-    let flipTimeoutId;
-    let soundTimeoutId;
     let messageTimeoutId;
+    let transitionStartTime = 0;
 
     const bodyEl = document.getElementById('body');
     const flashOverlay = document.getElementById('flash-overlay');
-    const btnPrep = document.getElementById('btn-prep');
-    const btnFlow = document.getElementById('btn-flow');
-    const btnFlip = document.getElementById('btn-flip');
-    const btnSound = document.getElementById('btn-sound');
 
-    function initAudio() {
-      try {
-        if (!audioCtx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) audioCtx = new AudioContext();
+    function updateDisplayDirect(mStr, sStr) {
+      ['min-unit', 'sec-unit'].forEach(id => {
+        const val = id === 'min-unit' ? mStr : sStr;
+        const unit = document.getElementById(id);
+        if (unit) {
+          unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
         }
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-      } catch (e) {
-        console.error("Audio init error:", e);
-      }
-    }
-
-    function playElegantChime() {
-      if (!isSoundEnabled || !audioCtx) return;
-      try {
-        const t = audioCtx.currentTime;
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.value = 880; 
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.value = 1760; 
-
-        gain1.gain.setValueAtTime(0, t);
-        gain1.gain.linearRampToValueAtTime(0.5, t + 0.05); 
-        gain1.gain.exponentialRampToValueAtTime(0.001, t + 3); 
-
-        gain2.gain.setValueAtTime(0, t);
-        gain2.gain.linearRampToValueAtTime(0.15, t + 0.05);
-        gain2.gain.exponentialRampToValueAtTime(0.001, t + 2);
-
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-
-        osc1.start(t);
-        osc1.stop(t + 3);
-        osc2.start(t);
-        osc2.stop(t + 2);
-      } catch (e) {
-        console.error("Audio play error:", e);
-      }
+      });
     }
 
     function flip(unitId, newNumber) {
@@ -494,164 +385,72 @@
       });
     }
 
-    function updateDisplay(mStr, sStr, forceUpdate = false) {
-      if (forceUpdate || !isFlipEnabled) {
-        ['min-unit', 'sec-unit'].forEach(id => {
-          const val = id === 'min-unit' ? mStr : sStr;
-          const unit = document.getElementById(id);
-          if (unit) {
-            unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
-            unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
-          }
-        });
-      } else {
-        flip('min-unit', mStr);
-        flip('sec-unit', sStr);
-      }
+    function updateDisplayFlip(mStr, sStr) {
+      flip('min-unit', mStr);
+      flip('sec-unit', sStr);
     }
 
-    function renderCurrentTime() {
+    function renderCurrentTime(useFlip = false) {
       if (currentMode === 'prep') {
         const m = Math.floor(timeLeft / 60).toString().padStart(2, '0');
         const s = (timeLeft % 60).toString().padStart(2, '0');
-        updateDisplay(m, s);
+        updateDisplayDirect(m, s);
       } else {
         const m = Math.floor(elapsedSeconds / 60).toString().padStart(2, '0');
         const s = (elapsedSeconds % 60).toString().padStart(2, '0');
-        updateDisplay(m, s);
+        if (useFlip) {
+          updateDisplayFlip(m, s);
+        } else {
+          updateDisplayDirect(m, s);
+        }
       }
     }
 
-    // 2分終了時の演出とメッセージ表示
     function triggerFlowTransition() {
-      // 1. 中央からのフラッシュ演出
+      transitionStartTime = Date.now();
+
       flashOverlay.classList.remove('flash-trigger');
       void flashOverlay.offsetWidth; 
       flashOverlay.classList.add('flash-trigger');
 
-      // 2. メッセージをふんわり表示
       bodyEl.classList.add('show-message');
 
-      // 3. 4秒後にメッセージを美しくフェードアウトさせる
       clearTimeout(messageTimeoutId);
       messageTimeoutId = setTimeout(() => {
         bodyEl.classList.remove('show-message');
-      }, 4000);
+        renderCurrentTime(false);
+      }, 5000);
     }
 
-    function toggleTimer() {
-      initAudio();
+    // 画面がクリックされたら100%確実にタイマーを起動
+    window.addEventListener('click', function() {
+      if (isRunning) return; // 二重起動防止
 
-      if (isRunning) {
-        clearInterval(timerInterval);
-        isRunning = false;
-        bodyEl.classList.add('paused');
-      } else {
-        isRunning = true;
-        bodyEl.classList.remove('paused');
-        
-        timerInterval = setInterval(() => {
-          if (currentMode === 'prep') {
-            timeLeft--;
-            renderCurrentTime();
-
-            if (timeLeft <= 0) {
-              playElegantChime();
-              triggerFlowTransition();
-              setMode('flow', true); 
-            }
-          } else {
-            elapsedSeconds++;
-            renderCurrentTime();
-          }
-        }, 1000);
-      }
-    }
-
-    function setMode(mode, autoTransition = false) {
-      clearInterval(timerInterval);
-      isRunning = false;
-      bodyEl.classList.add('paused');
+      isRunning = true;
+      bodyEl.classList.add('running'); // これで文字が白くなり、呼吸アニメーションがスタートする
       
-      currentMode = mode;
-      
-      if (mode === 'prep') {
-        timeLeft = PREP_TIME;
-        bodyEl.classList.remove('mode-flow');
-        bodyEl.classList.remove('show-message');
-      } else {
-        if (!autoTransition) {
-          bodyEl.classList.remove('show-message');
-        }
-        elapsedSeconds = 0;
-        bodyEl.classList.add('mode-flow');
-      }
-      
-      btnPrep.classList.toggle('active', mode === 'prep');
-      btnFlow.classList.toggle('active', mode === 'flow');
-      
-      renderCurrentTime();
-
-      if (autoTransition) {
-        isRunning = true;
-        bodyEl.classList.remove('paused');
-        
-        timerInterval = setInterval(() => {
-          elapsedSeconds++;
+      timerInterval = setInterval(() => {
+        if (currentMode === 'prep') {
+          timeLeft--;
           renderCurrentTime();
-        }, 1000);
-      }
-    }
 
-    function toggleFlip() {
-      isFlipEnabled = !isFlipEnabled;
-      btnFlip.textContent = isFlipEnabled ? "FLIP: ON" : "FLIP: OFF";
-      btnFlip.classList.add('flash');
-      clearTimeout(flipTimeoutId);
-      flipTimeoutId = setTimeout(() => {
-        btnFlip.classList.remove('flash');
-        btnFlip.textContent = "FLIP";
-      }, 1500);
-    }
-
-    function toggleSound() {
-      isSoundEnabled = !isSoundEnabled;
-      btnSound.textContent = isSoundEnabled ? "SOUND: ON" : "SOUND: OFF";
-      btnSound.classList.add('flash');
-      clearTimeout(soundTimeoutId);
-      soundTimeoutId = setTimeout(() => {
-        btnSound.classList.remove('flash');
-        btnSound.textContent = "SOUND";
-      }, 1500);
-      if(isSoundEnabled) {
-        initAudio();
-        playElegantChime();
-      }
-    }
-
-    btnPrep.addEventListener('click', function(e) {
-      e.stopPropagation();
-      setMode('prep');
-    });
-
-    btnFlow.addEventListener('click', function(e) {
-      e.stopPropagation();
-      setMode('flow');
-    });
-
-    btnFlip.addEventListener('click', function(e) {
-      e.stopPropagation();
-      toggleFlip();
-    });
-
-    btnSound.addEventListener('click', function(e) {
-      e.stopPropagation();
-      toggleSound();
-    });
-
-    document.body.addEventListener('click', function(e) {
-      if (e.target.closest('.bottom-bar')) return;
-      toggleTimer();
+          if (timeLeft <= 0) {
+            clearInterval(timerInterval);
+            
+            currentMode = 'flow';
+            elapsedSeconds = PREP_TIME; 
+            bodyEl.classList.add('mode-flow');
+            
+            triggerFlowTransition();
+            
+            timerInterval = setInterval(() => {
+              elapsedSeconds++;
+              const isMessageShowing = (Date.now() - transitionStartTime) < 5000;
+              renderCurrentTime(!isMessageShowing);
+            }, 1000);
+          }
+        }
+      }, 1000);
     });
 
     renderCurrentTime();
