@@ -23,37 +23,35 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-      align-items: center; /* 完全に画面の中央に配置 */
+      align-items: center;
       overflow: hidden;
       cursor: pointer;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
 
-    /* タイマーコンテナ */
+    /* タイマーコンテナ（基本は横並び） */
     .timer-container {
       display: flex;
       align-items: center;
       justify-content: center;
       width: 100%;
       gap: 3vw; 
+      transform: translateY(-3vh); 
+      transition: all 0.3s ease; /* 縦横の切り替えを少し滑らかに */
     }
 
     /* フリップユニット本体 */
     .flip-unit {
       position: relative;
-      /* ご指摘の通り、2桁用カードは横長（幅5：高さ4）が正解です！ */
-      aspect-ratio: 5 / 4; 
-      
-      /* 画面幅の43%、または高さの85%の「小さい方」に合わせて限界まで拡大 */
-      /* これにより、スマホ横向きで画面いっぱいに表示されます */
-      width: min(43vw, 85vh); 
+      aspect-ratio: 1 / 1; 
+      width: min(42vw, 75vh); /* 横画面時の限界サイズ */
       height: auto;
-      
       perspective: 1200px;
-      border-radius: 3cqmin; /* 丸みも横長に合わせて微調整 */
+      border-radius: 3cqmin; 
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
       background-color: #000;
       container-type: inline-size;
+      transition: width 0.3s ease;
     }
 
     @supports not (border-radius: 3cqmin) {
@@ -109,14 +107,13 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* カード幅に対する割合。横長になった分、数字が枠いっぱいに広がります */
-      font-size: 72cqi; 
+      font-size: 78cqi; 
       font-weight: 700;
       letter-spacing: -2px; 
       color: #f5f5f5;
     }
 
-    @supports not (font-size: 72cqi) {
+    @supports not (font-size: 78cqi) {
       .top::after, .bottom::after {
         font-size: clamp(80px, 30vw, 400px);
       }
@@ -161,7 +158,6 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      /* コロンもカードサイズに追従して最大化 */
       font-size: min(20vw, 35vh); 
       font-weight: 700;
       padding-bottom: 2%; 
@@ -183,9 +179,9 @@
     /* --- 下部コントロールバー --- */
     .bottom-bar {
       position: absolute;
-      bottom: env(safe-area-inset-bottom, 5vh);
+      bottom: calc(env(safe-area-inset-bottom, 10px) + 5px);
       width: 100%;
-      padding: 0 calc(env(safe-area-inset-right, 5vw) + 2vw) 3vh calc(env(safe-area-inset-left, 5vw) + 2vw);
+      padding: 0 calc(env(safe-area-inset-right, 5vw) + 2vw) 0 calc(env(safe-area-inset-left, 5vw) + 2vw);
       display: flex;
       justify-content: flex-end;
       align-items: center;
@@ -207,7 +203,7 @@
       letter-spacing: 3px;
       color: #333333;
       transition: color 0.4s ease;
-      padding: 15px;
+      padding: 8px 15px; 
       cursor: pointer;
     }
 
@@ -222,12 +218,36 @@
       letter-spacing: 2px;
       color: #333333;
       transition: color 0.2s ease;
-      padding: 15px;
+      padding: 8px 15px;
       cursor: pointer;
     }
 
     .flip-toggle.flash {
       color: #aaaaaa; 
+    }
+
+    /* =========================================
+       📱 スマホ縦画面（ポートレート）用の上書き設定
+       ========================================= */
+    @media (orientation: portrait) {
+      .timer-container {
+        flex-direction: column; /* 縦並びに変更 */
+        gap: 2vh; /* 縦の隙間 */
+        transform: translateY(-4vh); /* 縦並びの時の位置微調整 */
+      }
+      
+      .flip-unit {
+        /* 縦に2つ並ぶため、幅ではなく「画面の高さの約38%」を限界サイズに設定 */
+        width: min(85vw, 38vh); 
+      }
+      
+      .colon {
+        display: none; /* 縦並びの時はコロンを非表示にして洗練させる */
+      }
+      
+      .modes {
+        gap: 8vw; /* 縦画面だと横幅が狭いので、メニューの隙間を少し広めに */
+      }
     }
   </style>
 </head>
@@ -309,6 +329,10 @@
         ['min-unit', 'sec-unit'].forEach(id => {
           const val = id === 'min-unit' ? m : s;
           const unit = document.getElementById(id);
+          
+          // アニメーション途中の仮カード（ゴミ）が残っていたら強制的に消す
+          unit.querySelectorAll('.flip-top, .flip-bottom').forEach(el => el.remove());
+          
           unit.querySelectorAll('.top, .bottom').forEach(el => el.setAttribute('data-val', val));
         });
       } else {
